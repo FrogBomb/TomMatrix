@@ -2,14 +2,14 @@
 ##~~Written by Tom Blanchet~~##
 #~~~~~Written  2012-2013~~~~~~#
 ###############################
-import itertools
-import Tkinter
+#import itertools
+#import Tkinter
 import math
 import sys
 import random
 import time
 import mpmath
-import copy
+#import copy
 
 MULTIPLIERTHRESHHOLD = 350000 ##Yes, actually...
 
@@ -629,13 +629,13 @@ class matrix:
     def __div__(self, other):
         if isinstance(other, matrix):
             return self*other.inv()
-        elif any(type(data)==i for i in [int, float, long, complex]):
+        elif any(type(other)==i for i in [int, float, long, complex]):
             return matrix([j/other for j in self._data], self._numRows, self._numCols)
         else:
             raise NotImplemented
         
     def __rdiv__(self, other):
-        if any(type(data)==i for i in [int, float, long, complex]):
+        if any(type(other)==i for i in [int, float, long, complex]):
             return other*self.inv()
         else:
             raise NotImplemented
@@ -877,8 +877,8 @@ class matrix:
 ####                rmVal.append(AList[ai])
 ####        for val in rmVal:
 ####            AList.remove(val)
-
-        return [list(k) for k in EList]
+#
+#        return [list(k) for k in EList]
 
     def trace(self):
         """Returns the trace of the matrix."""
@@ -1237,7 +1237,7 @@ class matrix:
         detQ = 1
         CurA = self.copy()
         retA = self.copy()
-        QList = []
+#        QList = []
         Q = matrix(1, self._numRows, self._numRows)
         for j in range(min(self._numCols, self._numRows)):
             alpha = (sum(CurA[i, 0]**2 for i in range(CurA._numRows))**.5)
@@ -1323,7 +1323,7 @@ class matrix:
             while itr > 0:
                 ##the error bound is simply looking to see how close the matrix is to an upper triangular
                 QR = A.QRDecomposition()
-                prevA = A.copy()
+#                prevA = A.copy()
                 A = QR[1]*QR[0]
                 Q = Q*QR[0]
                 itr-=1
@@ -1533,8 +1533,8 @@ class keyValuedPrinter(printer):
         ##self._print = u"\u2308"+ " "*(sum(colWidths)+(len(colWidths)-1)*3) + u"\u2309" + "\n"
         self._print = ""
         space = " "
-        NumRows = matrix.getNumRows()
-        NumCols = matrix.getNumCols()
+#        NumRows = matrix.getNumRows()
+#        NumCols = matrix.getNumCols()
         self._print = space*(maxRowKeyWidth+1) + space.join(str(iterCols[j])+space*(colWidths[j]-len(str(iterCols[j]))) for j in range(len(iterCols))) + space + "\n"
         for row in range(len(iterRows)):
             if len(iterRows) == 1:
@@ -1720,7 +1720,7 @@ def randomUnitaryMatrix(size):
         print "Currently, the algorthm is unstable for size over"
         print "30."
     unitVectors = [list(randomUnitVector(i+1)) for i in range(size)]
-    unitaryVecs = []
+#    unitaryVecs = []
     i = 1
     curMat = matrix(unitVectors[0], 1, 1)
     while(i<size):
@@ -1754,7 +1754,7 @@ def fastSum(numList, makeMpf=True, usePySum = False):
     absolute = False
     max_extra_prec = mpmath.mp.prec*2 or 1000000  # XXX
     special = None
-    flagMpf = False
+#    flagMpf = False
     for x in numList:
         if any(type(x) == i for i in (float, int, long)):
             ##may throw an exception in python 2.5
