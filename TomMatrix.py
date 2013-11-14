@@ -228,6 +228,8 @@ class matrix:
                         
 
     def __setitem__(self, key, value):
+        if self.isMpf:
+            value = mpmath.mpf(value)
 ##        if type(value) !=  self._mtype:
 ##            raise TypeError("must be the same type as the matrix")
         if type(key) == int:
