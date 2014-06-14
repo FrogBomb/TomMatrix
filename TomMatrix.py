@@ -1192,35 +1192,38 @@ class matrix:
         #the two matrices in A will be tridiagonal.
         U = [A[0][1], A[1][1]]#Both of these will be square
         A = [A[0][0], A[1][0]]#just getting the matricies
-        j = 0
         for i in range(2):
-            while(j< A[i].dims()[0]-1): #We 
+            j = 0
+            while(j< A[i].dims()[0]-1): #We want 1- the diagonal length
                 a = A[i][j, j]
                 b = A[i][j+1, j]
                 c = A[i][j+1, j+1]
                 
-                temp1 = ((a-c)**2-b**2)**.5
-                temp2 = a-c
-                y = 2*(-temp2-temp1)
-                x = 2*(temp2-temp1)
+                temp1 = ((a-c)**2+4*b**2)**.5
+                temp2 = c-a
+                y = .5*(temp2-temp1)
+                x = .5*(temp2+temp1)
                 
-                magy = (y**2 + .25*b**2)**.5
-                magx = (x**2 + .25*b**2)**.5
+                magy = (y**2 + b**2)**.5
+                magx = (x**2 + b**2)**.5
                 y = y/magy
                 x = x/magx
-                by = .5*b/magy
-                bx = .5*b/magx
+                by = -b/magy
+                bx = -b/magx
                 
-                print a*y+b*by/y, b*y+c*by/by
-                
+                print ((y*a+by*b)/y)/((y*b+by*c)/by)
+                print y*x+by*bx
                 newRot = matrix(1, U[i].dims()[0], U[i].dims()[1])
+                
                 newRot[j, j] = y
                 newRot[j, j+1] = x
                 newRot[j+1, j] = by
                 newRot[j+1, j+1] = bx
-                U[i] = U[i]*newRot.tC()
-                A[i] = A[i]*newRot
                 
+                U[i] = U[i]*newRot.tC()
+                A[i] = newRot.tC()*A[i]*newRot
+                if j == 0:
+                    print A[i]
                 j+=1
         
         sigma = U[1].tC()*self*U[0]
