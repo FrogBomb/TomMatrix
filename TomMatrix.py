@@ -111,7 +111,7 @@ class matrix:
 ##        if data == None:
 ##            data = 0
 ##            self._data = [0]*rows*cols
-        if any(type(data)==i for i in [int, float, long, complex, mpmath.mpf]):
+        if any([type(data)==i for i in [int, float, long, complex, mpmath.mpf]]):
             for i in range(min(rows, cols)):
                 self._data[i, i] = data
 ##            self._data = [data*(i==j) for i in range(rows) for j in range(cols)]
@@ -122,9 +122,9 @@ class matrix:
             if len(data)>rows*cols:
                 raise BufferError("data must be able to fit in the matrix")
             for i in xrange(len(data)):
-                if all(type(data[i])!=t for t in [int, float, long, complex, mpmath.mpf]):
+                if all([not isinstance(data[i], t) for t in [int, float, long, complex, mpmath.mpf]]):
                     raise TypeError("Entries must be an int, float, long, complex, or mpmath.mpf.")
-                self._data[i//self._numRows, i%self._numRows] = data[i]
+                self._data[i//self._numCols, i%self._numCols] = data[i]
         self._printer(self, doPrint = False)
         self._keyPrinter(self, doPrint=False)
         if makeMpf:
@@ -496,7 +496,7 @@ class matrix:
         return [self[i, colNum] for i in range(self._numRows)]
 
     def oldMul(self, other):
-        if any(type(other)==i for i in [int, float, long, complex]):
+        if any([type(other)==i for i in [int, float, long, complex]]):
             return matrix([j*other for j in self._data], self._numRows, self._numCols)
         if not isinstance(other, matrix):
             raise NotImplemented
@@ -512,7 +512,7 @@ class matrix:
         return new_matrix
     
     def __mul__(self, other):
-        if any(type(other)==i for i in [int, float, long, complex, mpmath.mpf]):
+        if any([type(other)==i for i in [int, float, long, complex, mpmath.mpf]]):
             return matrix([j*other for j in self], self._numRows, self._numCols)
         if not isinstance(other, matrix):
             raise NotImplemented
@@ -600,7 +600,7 @@ class matrix:
             return new_matrix
 
     def __rmul__(self, other):
-        if any(type(other)==i for i in [int, float, long, complex]):
+        if any([type(other)==i for i in [int, float, long, complex]]):
             return self*other
         else:
             raise NotImplemented
@@ -631,13 +631,13 @@ class matrix:
     def __div__(self, other):
         if isinstance(other, matrix):
             return self*other.inv()
-        elif any(type(other)==i for i in [int, float, long, complex]):
+        elif any([type(other)==i for i in [int, float, long, complex]]):
             return matrix([j/other for j in self._data], self._numRows, self._numCols)
         else:
             raise NotImplemented
         
     def __rdiv__(self, other):
-        if any(type(other)==i for i in [int, float, long, complex]):
+        if any([type(other)==i for i in [int, float, long, complex]]):
             return other*self.inv()
         else:
             raise NotImplemented
@@ -1053,7 +1053,7 @@ class matrix:
         ##is an eigenvector
         eigenvectors = []
         for eival in eigenvalues:
-            if any(type(eival) == i for i in (complex, mpmath.mpc)):
+            if any([type(eival) == i for i in (complex, mpmath.mpc)]):
                 matMinusReal = self  - matrix(eival.real, self._numRows, self._numCols)
                 imagI = matrix(eival.imag, self._numRows, self._numCols)
                 I = matrix(1, 2, 2)
@@ -1188,19 +1188,57 @@ class matrix:
 
     def SVD(self):
         """Finds the singular values, and associated U and V. (M = USigmaV*)"""
-        A = (self.tC()*self).Eigen()
-        B = (self*self.tC()).Eigen()
-        Vdat = [A[1][i][j][k] for i in range(len(A[1]))\
-                for j in range(len(A[1][i])) for k in range(len(A[1][i][j]))]
-        Udat = [B[1][i][j][k] for i in range(len(B[1]))\
-                for j in range(len(B[1][i])) for k in range(len(B[1][i][j]))]
-        V = matrix(Vdat, self._numCols, self._numCols)
-        U = matrix(Udat, self._numRows, self._numRows)
-        if len(A[0])<=len(B[0]):
-            singularVals = [i**.5 for i in A[0]]
-        else:
-            singularVals = [i**.5 for i in B[0]]
-        return singularVals, U.tC(), V.tC()
+        A = [(self.tC()*self).Hessenburg(), (self*self.tC()).Hessenburg()]
+        #the two matrices in A will be tridiagonal.
+        U = [A[0][1], A[1][1]]#Both of these will be square
+        A = [A[0][0], A[1][0]]#just getting the matricies
+        j = 0
+        for i in range(2):
+            while(j< A[i].dims()[0]-1): #We 
+                a = A[i][j, j]
+                b = A[i][j+1, j]
+                c = A[i][j+1, j+1]
+                
+                temp1 = ((a-c)**2-b**2)**.5
+                temp2 = a-c
+                y = 2*(-temp2-temp1)
+                x = 2*(temp2-temp1)
+                
+                magy = (y**2 + .25*b**2)**.5
+                magx = (x**2 + .25*b**2)**.5
+                y = y/magy
+                x = x/magx
+                by = .5*b/magy
+                bx = .5*b/magx
+                
+                print a*y+b*by/y, b*y+c*by/by
+                
+                newRot = matrix(1, U[i].dims()[0], U[i].dims()[1])
+                newRot[j, j] = y
+                newRot[j, j+1] = x
+                newRot[j+1, j] = by
+                newRot[j+1, j+1] = bx
+                U[i] = U[i]*newRot.tC()
+                A[i] = A[i]*newRot
+                
+                j+=1
+        
+        sigma = U[1].tC()*self*U[0]
+        singVals = [sigma[i,i] for i in range(min(sigma.dims()))]
+        return singVals, U[1], U[0].tC()
+#        A = (self.tC()*self).Eigen()
+#        B = (self*self.tC()).Eigen()
+#        Vdat = [A[1][i][j][k] for i in range(len(A[1]))\
+#                for j in range(len(A[1][i])) for k in range(len(A[1][i][j]))]
+#        Udat = [B[1][i][j][k] for i in range(len(B[1]))\
+#                for j in range(len(B[1][i])) for k in range(len(B[1][i][j]))]
+#        V = matrix(Vdat, self._numCols, self._numCols)
+#        U = matrix(Udat, self._numRows, self._numRows)
+#        if len(A[0])<=len(B[0]):
+#            singularVals = [i**.5 for i in A[0]]
+#        else:
+#            singularVals = [i**.5 for i in B[0]]
+#        return singularVals, U.tC(), V.tC()
 
     def pseudoinverse(self, threshold = 10**-5):
         sing, U, V = self.SVD()
@@ -1330,7 +1368,7 @@ class matrix:
                 Q = Q*QR[0]
                 itr-=1
             boxCheck = [abs(A[i+1, i])>confidence for i in range(self._numRows-1)]
-            confNotSat = any(boxCheck[i]*boxCheck[i+1] for i in range(len(boxCheck)-1))
+            confNotSat = any([boxCheck[i]*boxCheck[i+1] for i in range(len(boxCheck)-1)])
         mpmath.mp.prec = prevPrec
         return A, Q
 
@@ -1583,7 +1621,7 @@ class vector(list):
     def __mul__(self, other):
         if isinstance(other, vector):
             return vector(self[i]*other[i] for i in range(min(len(self), len(other))))
-        elif any(isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)):
+        elif any([isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)]):
             return vector(self[i]*other for i in range(len(self)))
         else:
             raise NotImplemented
@@ -1591,7 +1629,7 @@ class vector(list):
     def __sub__(self, other):
         if isinstance(other, vector):
             return vector(self[i]-other[i] for i in range(min(len(self), len(other))))
-        elif any(isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)):
+        elif any([isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)]):
             return vector(self[i]-other for i in range(len(self)))
         else:
             raise NotImplemented
@@ -1599,7 +1637,7 @@ class vector(list):
     def __add__(self, other):
         if isinstance(other, vector):
             return vector(self[i]+other[i] for i in range(min(len(self), len(other))))
-        elif any(isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)):
+        elif any([isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)]):
             return vector(self[i]+other for i in range(len(self)))
         else:
             raise NotImplemented
@@ -1607,7 +1645,7 @@ class vector(list):
     def __radd__(self, other):
         if isinstance(other, vector):
             return vector(other[i]+self[i] for i in range(min(len(self), len(other))))
-        elif any(isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)):
+        elif any([isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)]):
             return vector(other+self[i] for i in range(len(self)))
         else:
             raise NotImplemented
@@ -1616,7 +1654,7 @@ class vector(list):
 
         if isinstance(other, vector):
             return vector(self[i]/other[i] for i in range(min(len(self), len(other))))
-        elif any(isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)):
+        elif any([isinstance(other, i) for i in (int, float, long, complex, mpmath.mpf)]):
             return vector(self[i]/other for i in range(len(self)))
         else:
             raise NotImplemented
@@ -1682,14 +1720,14 @@ def randomEigenMatrix(eigenvalues, low=-1, high=1):
         if type(ev)==complex:
             if eiVals.count((ev.real, abs(ev.imag)))==0:
                 eiVals.append((ev.real, abs(ev.imag)))
-        elif any(type(ev)==i for i in [float, int, long]):
+        elif any([type(ev)==i for i in [float, int, long]]):
             eiVals.append(ev)
     size = sum((type(i)==tuple)+1 for i in eiVals)
     eigenMat = matrix(0, size, size)
     eiI = 0
     diaI = 0
     while(eiI<len(eiVals)):
-        if any(type(eiVals[eiI])==i for i in [float, int, long]):
+        if any([type(eiVals[eiI])==i for i in [float, int, long]]):
             eigenMat[diaI, diaI] = eiVals[eiI]
             diaI+=1
             eiI+=1
@@ -1758,7 +1796,7 @@ def fastSum(numList, makeMpf=True, usePySum = False):
     special = None
 #    flagMpf = False
     for x in numList:
-        if any(type(x) == i for i in (float, int, long)):
+        if any([type(x) == i for i in (float, int, long)]):
             ##may throw an exception in python 2.5
             xman, xexp,  = math.frexp(x)
             xsign, xman = xman<0, abs(xman)
@@ -1815,7 +1853,7 @@ def fastDot(numPairsList, makeMpf = False):
     special = None
     flagMpf = False
     for x1, x2 in numPairsList:
-        if any(type(x1) == i for i in (float, int, long)):
+        if any([type(x1) == i for i in (float, int, long)]):
             ##may throw an exception in python 2.5
             x1man, x1exp,  = math.frexp(x1)
             x1sign, x1man = x1man<0, abs(x1man)
@@ -1824,7 +1862,7 @@ def fastDot(numPairsList, makeMpf = False):
             x1sign, x1man, x1exp, x1bc = x1._mpf_
         else:
             raise TypeError("Wrong type to fastDot.")
-        if any(type(x2) == i for i in (float, int, long)):
+        if any([type(x2) == i for i in (float, int, long)]):
             ##may throw an exception in python 2.5
             x2man, x2exp  = math.frexp(x2)
             x2sign, x2man = x2man<0, abs(x2man)
