@@ -1188,29 +1188,65 @@ class matrix:
 
     def SVD(self):
         """Finds the singular values, and associated U and V. (M = USigmaV*)"""
-#        A = [(self.tC()*self).Hessenburg(), (self*self.tC()).Hessenburg()]
-#        #the two matrices in A will be tridiagonal.
-#        U = [A[0][1], A[1][1]]#Both of these will be square
-#        A = [A[0][0], A[1][0]]#just getting the matricies
+        A = [(self*self.tC()).Hessenburg(), (self.tC()*self).Hessenburg()]
+        #the two matrices in A will be symmetric tridiagonal.
+        U = [A[0][1], A[1][1]]#Both of these will be square
+        A = [A[0][0], A[1][0]]#just getting the matricies
+        
+        singularVals = [None, None]
+        
+        for i in range(2):
+            ##Recursively finding the charactoristic polynomial
+            poly_a = [1]
+            poly_b = [A[i][0,0], -1]
+            alpha = [A[i][k, k] for k in range(1, A[i].dims()[0])]
+            beta = [A[i][k, k+1]**2 for k in range(A[i].dims()[0]-1)]
+            for row in range(A[i].dims()[0]-1):
+                poly_c = poly_b
+                poly_a = poly_a + [0]
+                poly_b = [alpha[row]*poly_b[0] - beta[row]*poly_a[0]]+\
+                        [alpha[row]*poly_b[k]-poly_b[k-1] - beta[row]*poly_a[k]\
+                        for k in range(1, len(poly_b))]
+                poly_a = poly_c
+            
+            charPoly = poly_b
+            
+            charPoly.reverse()
+            singularVals = mpmath.polyroots(charPoly)
+            kernVecs = []
+            for sV in singularVals:
+                lamMat = matrix(sV, A[i].dims()[0], A[i].dims()[1], True)
+                kernMat = A[i]-lamMat
+                kernVecs.append(kernMat.Ker())
+            Udat = [kernVecs[i][j][k] for i in range(len(kernVecs))\
+                for j in range(len(kernVecs[i])) for k in range(len(kernVecs[i][j]))]
+            U[i] = matrix(Udat, self.dims()[i], self.dims()[i])
+            
+        sigMat = U[0].tC()*self*U[1]
+        sigVals = [sigMat[k, k] for k in range(min(self.dims()))]
+        return sigVals, U[0], U[1]
+        
 #        for i in range(2):
 #            temp = A[i].Schur(10)
 #            U[i] = U[i]*temp[1]
 #        sigma = U[1].tC()*self*U[0]
 #        singVals = [sigma[i,i] for i in range(min(sigma.dims()))]
 #        return singVals, U[1], U[0].tC()
-        A = (self.tC()*self).Eigen()
-        B = (self*self.tC()).Eigen()
-        Vdat = [A[1][i][j][k] for i in range(len(A[1]))\
-                for j in range(len(A[1][i])) for k in range(len(A[1][i][j]))]
-        Udat = [B[1][i][j][k] for i in range(len(B[1]))\
-                for j in range(len(B[1][i])) for k in range(len(B[1][i][j]))]
-        V = matrix(Vdat, self._numCols, self._numCols)
-        U = matrix(Udat, self._numRows, self._numRows)
-        if len(A[0])<=len(B[0]):
-            singularVals = [i**.5 for i in A[0]]
-        else:
-            singularVals = [i**.5 for i in B[0]]
-        return singularVals, U.tC(), V.tC()
+        
+        
+#        A = (self.tC()*self).Eigen()
+#        B = (self*self.tC()).Eigen()
+#        Vdat = [A[1][i][j][k] for i in range(len(A[1]))\
+#                for j in range(len(A[1][i])) for k in range(len(A[1][i][j]))]
+#        Udat = [B[1][i][j][k] for i in range(len(B[1]))\
+#                for j in range(len(B[1][i])) for k in range(len(B[1][i][j]))]
+#        V = matrix(Vdat, self._numCols, self._numCols)
+#        U = matrix(Udat, self._numRows, self._numRows)
+#        if len(A[0])<=len(B[0]):
+#            singularVals = [i**.5 for i in A[0]]
+#        else:
+#            singularVals = [i**.5 for i in B[0]]
+#        return singularVals, U.tC(), V.tC()
 
     def pseudoinverse(self, threshold = 10**-5):
         sing, U, V = self.SVD()
