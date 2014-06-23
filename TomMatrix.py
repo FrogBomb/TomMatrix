@@ -9,6 +9,7 @@ import sys
 import random
 import time
 import mpmath
+from TomMatrixEditor import MatrixEditor
 #import copy
 
 MULTIPLIERTHRESHHOLD = 350000 ##Yes, actually...
@@ -140,7 +141,10 @@ class matrix:
                 raise MatrixError("Keys must only contain ints, longs, or strings.")
 
     def Print(self):
-        self._printer()
+        try:
+            self._printer()
+        except UnicodeEncodeError:
+            return self._printer.getPrintStr()
 
     def KeyPrint(self):
         self._keyPrinter()
@@ -1627,19 +1631,19 @@ class keyValuedPrinter(printer):
 
 
     
-class matrixEditor:
-    ##NOTES:
-    ##Implement GUI shit
-    ##May be useful with printer
-    def __init__(self, matrix):
-        self._matrix = matrix
-        
-    def refresh(self):
-        raise NotImplemented
-    
-    def loadMatrix(self, Matrix):
-        self._matrix = matrix
-        self.refresh()
+#class matrixEditor:
+#    ##NOTES:
+#    ##Implement GUI shit
+#    ##May be useful with printer
+#    def __init__(self, matrix):
+#        self._matrix = matrix
+#        
+#    def refresh(self):
+#        raise NotImplemented
+#    
+#    def loadMatrix(self, Matrix):
+#        self._matrix = matrix
+#        self.refresh()
 
 class vector(list):
     ##NOTES:

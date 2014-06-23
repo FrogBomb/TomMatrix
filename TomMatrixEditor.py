@@ -8,37 +8,39 @@ Created on Thu Nov 14 12:07:26 2013
 from Tkinter import *
 from TomMatrix import *
 
-class TomMatrixEditor():
+class MatrixEditor():
+    """To use, simply pass in a matrix to edit as the first arguement in instanciation.
+        Then, call the MatrixEditor to open the editor."""
     def __init__(self, inMatrix):
         self.matrix = inMatrix
         
     def __call__(self, *args, **kwargs):
         
         self.root = Tk(*args, **kwargs)
-        self.createEntryMatrix()
-        self.buttonBox()
+        self._createEntryMatrix()
+        self._buttonBox()
         
         self.root.focus_set()
         
         self.root.mainloop()
     
-    def buttonBox(self):
+    def _buttonBox(self):
         
         box = Frame(self.root)
 
-        w = Button(box, text="Save", width=10, command=self.save, default=ACTIVE)
+        w = Button(box, text="Save", width=10, command=self._save, default=ACTIVE)
         w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Save & Quit", width=10, command=self.quit)
+        w = Button(box, text="Save & Quit", width=10, command=self._quit)
         w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Cancel", width=10, command=self.cancel)
+        w = Button(box, text="Cancel", width=10, command=self._cancel)
         w.pack(side=LEFT, padx=5, pady=5)
 
-        self.root.bind("<Return>", self.save)
-        self.root.bind("<Escape>", self.cancel)
+        self.root.bind("<Return>", self._save)
+        self.root.bind("<Escape>", self._cancel)
         
         box.pack()
     
-    def createEntryMatrix(self):
+    def _createEntryMatrix(self):
         box = Frame(self.root)
         numRows, numCols = self.matrix.dims()
         self.EntryMatrix = [Entry(box) for i in range(numRows*numCols)]
@@ -51,7 +53,7 @@ class TomMatrixEditor():
         box.pack()
                 
     
-    def save(self):
+    def _save(self):
         numRows, numCols = self.matrix.dims()
         for row in range(numRows):
             for col in range(numCols):
@@ -60,9 +62,9 @@ class TomMatrixEditor():
                 except ValueError:
                     self.matrix[row, col] = 0
     
-    def quit(self):
-        self.save()
-        self.cancel()
+    def _quit(self):
+        self._save()
+        self._cancel()
     
-    def cancel(self):
+    def _cancel(self):
         self.root.destroy()
