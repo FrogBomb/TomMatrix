@@ -1,6 +1,6 @@
 ###############################
 ##~~Written by Tom Blanchet~~##
-#~~~~~Written  2012-2013~~~~~~#
+#~~~~~Written  2012-2014~~~~~~#
 ###############################
 #import itertools
 #import Tkinter
