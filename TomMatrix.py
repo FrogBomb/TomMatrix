@@ -1186,45 +1186,67 @@ class matrix:
         return retPoly
         
 
-    def SVD(self):
-        """Finds the singular values, and associated U and V. (M = USigmaV*)"""
-        A = [(self*self.tC()).Hessenburg(), (self.tC()*self).Hessenburg()]
-        #the two matrices in A will be symmetric tridiagonal.
-        U = [A[0][1], A[1][1]]#Both of these will be square
-        A = [A[0][0], A[1][0]]#just getting the matricies
+    def SVD(self, returnUandV = True):
+        """Finds the singular values, and associated U and V (if requested). (M = USigmaV*)"""
         
-        singularVals = [None, None]
-        
-        for i in range(2):
+        if returnUandV:
+            A = [(self*self.tC()).Hessenburg(), (self.tC()*self).Hessenburg()]
+            #the two matrices in A will be symmetric tridiagonal.
+            U = [A[0][1], A[1][1]]#Both of these will be square
+            A = [A[0][0], A[1][0]]#just getting the matricies
+            iterRange = range(2)
+            singularVals = [None, None]
+        else:
+            iterRange = [0]
+            if(self.dims()[0]<self.dims()[1]):
+                A = (self*self.tC()).Hessenburg()
+            else:
+                A = (self.tC()*self).Hessenburg()
+            U = [A[1]]
+            A = [A[0]]
+            
+        for m in iterRange:
             ##Recursively finding the charactoristic polynomial
             poly_a = [1]
-            poly_b = [A[i][0,0], -1]
-            alpha = [A[i][k, k] for k in range(1, A[i].dims()[0])]
-            beta = [A[i][k, k+1]**2 for k in range(A[i].dims()[0]-1)]
-            for row in range(A[i].dims()[0]-1):
+            poly_b = [A[m][0,0], -1]
+            alpha = [A[m][k, k] for k in range(1, A[m].dims()[0])]
+            beta = [A[m][k, k+1]**2 for k in range(A[m].dims()[0]-1)]
+            for row in range(A[m].dims()[0]-1):
                 poly_c = poly_b
                 poly_a = poly_a + [0]
                 poly_b = [alpha[row]*poly_b[0] - beta[row]*poly_a[0]]+\
                         [alpha[row]*poly_b[k]-poly_b[k-1] - beta[row]*poly_a[k]\
-                        for k in range(1, len(poly_b))]
+                        for k in range(1, len(poly_b))] + [-poly_b[-1]]
                 poly_a = poly_c
             
             charPoly = poly_b
             
             charPoly.reverse()
             singularVals = mpmath.polyroots(charPoly)
-            kernVecs = []
-            for sV in singularVals:
-                lamMat = matrix(sV, A[i].dims()[0], A[i].dims()[1], True)
-                kernMat = A[i]-lamMat
-                kernVecs.append(kernMat.Ker())
-            Udat = [kernVecs[i][j][k] for i in range(len(kernVecs))\
-                for j in range(len(kernVecs[i])) for k in range(len(kernVecs[i][j]))]
-            U[i] = matrix(Udat, self.dims()[i], self.dims()[i])
+            singularVals = [i if i.imag == 0 else 0 for i in singularVals]
+            singularVals.sort()
+            singularVals.reverse()
+            if returnUandV:
+                kernVecs = []
+                for sV in singularVals:
+                    lamMat = matrix(sV, A[m].dims()[0], A[m].dims()[1], True)
+                    kernMat = A[m]-lamMat
+                    kernVecs.append(kernMat.Ker())
+                Udat = [kernVecs[i][j][k] for i in range(len(kernVecs))\
+                    for j in range(len(kernVecs[i])) for k in range(len(kernVecs[i][j]))]
+                        
+                U[m] = matrix(Udat, self.dims()[m], self.dims()[m])*U[m].tC()
+            else:
+                break
             
-        sigMat = U[0].tC()*self*U[1]
-        sigVals = [sigMat[k, k] for k in range(min(self.dims()))]
-        return sigVals, U[0], U[1]
+#        print U[0]*self*self.tC()*U[0].tC()
+#        print U[1]*self.tC()*self*U[1].tC()
+        if returnUandV:
+            sigMat = U[0]*self*U[1].tC()
+            sigVals = [sigMat[k, k] for k in range(min(self.dims()))]
+            return sigVals, U[0].tC(), U[1].tC()
+        else:
+            return [i**.5 for i in singularVals]
         
 #        for i in range(2):
 #            temp = A[i].Schur(10)
