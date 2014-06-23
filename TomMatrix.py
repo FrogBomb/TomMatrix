@@ -714,7 +714,7 @@ class matrix:
         Q = matrix(1, self._numRows, self._numRows)
 ##        qList = []
         count = 0
-        reduced = False
+##        reduced = False
         for j in range(min(self._numCols, self._numRows)):
             stayFlag = True
             skipFlag = False
@@ -793,7 +793,7 @@ class matrix:
             CurA.makeMpf()
 ##        qList = []
         count = 0
-        reduced = False
+##        reduced = False
         for j in range(min(self._numCols, self._numRows)):
             stayFlag = True
             skipFlag = False
